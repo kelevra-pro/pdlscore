@@ -1,0 +1,12 @@
+.git
+.github
+.svelte-kit
+node_modules
+build
+data
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+Dockerfile
