@@ -11,7 +11,7 @@ export function loadTournament(id: string): { tournament: Tournament; games: Gam
 	const tournament = getTournament(id);
 	if (!tournament) error(404, 'Турнир не найден');
 	const rows = getGames(id);
-	const games = generateSchedule().map((g) => {
+	const games = generateSchedule(tournament.players.length).map((g) => {
 		const row = rows.find((r) => r.idx === g.idx);
 		return { ...g, score1: row?.score1 ?? null, score2: row?.score2 ?? null };
 	});

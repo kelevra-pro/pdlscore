@@ -1,16 +1,30 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { DEFAULT_POINTS, PLAYER_COUNT, POINTS_OPTIONS } from '#lib/domain/schedule.ts';
+	import { DEFAULT_POINTS, PLAYER_COUNTS, POINTS_OPTIONS, gameCount } from '#lib/domain/schedule.ts';
+	import { plural } from '#lib/plural.ts';
 	import type { PageProps } from './$types';
 
-	let { form }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 
 	let submitting = $state(false);
 	const points = $derived(form?.points ?? DEFAULT_POINTS);
+	// Writable derived: follows the URL (?players=8) and a failed submit, and clicks with JS.
+	let count = $derived(form?.count ?? data.count);
+	const courts = $derived(count / 4);
+
+	function pickCount(event: MouseEvent, value: number) {
+		event.preventDefault();
+		count = value;
+	}
 </script>
 
 <h1>Новый Americano</h1>
-<p class="muted">4 игрока, 1 корт, 3 игры — каждый сыграет в паре с каждым.</p>
+<p class="muted">
+	{count}
+	{plural(count, ['игрок', 'игрока', 'игроков'])}, {courts}
+	{plural(courts, ['корт', 'корта', 'кортов'])}, {gameCount(count)}
+	{plural(gameCount(count), ['игра', 'игры', 'игр'])} — каждый сыграет в паре с каждым.
+</p>
 
 <form
 	method="POST"
@@ -28,8 +42,26 @@
 	{/if}
 
 	<fieldset>
+		<legend>Количество игроков</legend>
+		<div class="segmented">
+			{#each PLAYER_COUNTS as option (option)}
+				<a
+					href="?players={option}"
+					class:selected={option === count}
+					aria-current={option === count ? 'true' : undefined}
+					data-sveltekit-replacestate
+					data-sveltekit-noscroll
+					onclick={(e) => pickCount(e, option)}><span>{option}</span></a
+				>
+			{/each}
+		</div>
+	</fieldset>
+
+	<input type="hidden" name="count" value={count} />
+
+	<fieldset>
 		<legend>Игроки</legend>
-		{#each { length: PLAYER_COUNT }, i (i)}
+		{#each { length: count }, i (i)}
 			<label class="player">
 				<span>P{i + 1}</span>
 				<input
@@ -80,7 +112,7 @@
 	}
 
 	.player span {
-		width: 28px;
+		width: 32px;
 		color: var(--muted);
 		font-weight: 600;
 	}
@@ -125,13 +157,25 @@
 		cursor: pointer;
 	}
 
-	.segmented input:checked + span {
+	.segmented a {
+		color: inherit;
+		text-decoration: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.segmented input:checked + span,
+	.segmented a.selected span {
 		background: var(--accent);
 		border-color: var(--accent);
 		color: var(--accent-text);
 	}
 
-	.segmented input:focus-visible + span {
+	.segmented a:focus-visible {
+		outline: none;
+	}
+
+	.segmented input:focus-visible + span,
+	.segmented a:focus-visible span {
 		outline: 2px solid var(--accent);
 		outline-offset: 2px;
 	}
