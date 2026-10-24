@@ -23,3 +23,4 @@
 - Репозиторий ПУБЛИЧНЫЙ: никаких секретов, IP, имён пользователей, хостов VPS и .env в коде, конфигах и логах. Только GitHub Secrets или .env на сервере.
 - Секреты используются только в workflow на push в main. Не используй pull_request_target.
 - Не добавляй Claude в авторы и соавторы: никаких Co-Authored-By, ссылок на сессию и подписей «Generated with Claude Code» в коммитах и PR.
+- Автор и коммиттер всех коммитов — `Damir Mukhamedinov <fixable-hessian.3b@icloud.com>`. Перед пушем проверяй `git log -1 --format='%an <%ae> | %cn <%ce>'`; если там Claude — исправь через `git commit --amend --no-edit --reset-author` с правильным `user.name`/`user.email`.
