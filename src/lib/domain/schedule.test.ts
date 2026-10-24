@@ -1,38 +1,77 @@
 import { describe, expect, it } from 'vitest';
-import { generateSchedule, isValidPoints, isValidScore } from './schedule';
+import {
+	PLAYER_COUNTS,
+	gameCount,
+	generateSchedule,
+	isValidPlayerCount,
+	isValidPoints,
+	isValidScore
+} from './schedule';
+
+const key = (a: number, b: number) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
 describe('generateSchedule', () => {
-	const games = generateSchedule();
-
-	it('produces 3 games', () => {
-		expect(games).toHaveLength(3);
+	it('defaults to 4 players and matches the plan table', () => {
+		const games = generateSchedule();
 		expect(games.map((g) => g.idx)).toEqual([0, 1, 2]);
-	});
-
-	it('matches the plan table', () => {
 		expect(games.map((g) => [g.pair1, g.pair2])).toEqual([
 			[[0, 1], [2, 3]],
 			[[0, 2], [1, 3]],
 			[[0, 3], [1, 2]]
 		]);
+		expect(games.every((g) => g.court === 0)).toBe(true);
 	});
 
-	it('every player plays every game', () => {
-		for (const g of games) {
-			expect([...g.pair1, ...g.pair2].sort()).toEqual([0, 1, 2, 3]);
-		}
+	it('rejects unsupported player counts', () => {
+		expect(() => generateSchedule(6)).toThrow();
+		expect(isValidPlayerCount(8)).toBe(true);
+		expect(isValidPlayerCount(5)).toBe(false);
 	});
 
-	it('every player partners every other player exactly once', () => {
-		const counts = new Map<string, number>();
-		for (const g of games) {
-			for (const [a, b] of [g.pair1, g.pair2]) {
-				const key = [a, b].sort().join('-');
-				counts.set(key, (counts.get(key) ?? 0) + 1);
+	describe.each(PLAYER_COUNTS)('%i players', (n) => {
+		const games = generateSchedule(n);
+		const players = Array.from({ length: n }, (_, i) => i);
+
+		it('has n-1 rounds of n/4 games with sequential idx', () => {
+			expect(games).toHaveLength(gameCount(n));
+			expect(games.map((g) => g.idx)).toEqual(games.map((_, i) => i));
+			for (let r = 0; r < n - 1; r++) {
+				const round = games.filter((g) => g.round === r);
+				expect(round.map((g) => g.court)).toEqual(Array.from({ length: n / 4 }, (_, c) => c));
 			}
-		}
-		expect(counts.size).toBe(6);
-		for (const c of counts.values()) expect(c).toBe(1);
+		});
+
+		it('every player plays exactly once per round', () => {
+			for (let r = 0; r < n - 1; r++) {
+				const seen = games
+					.filter((g) => g.round === r)
+					.flatMap((g) => [...g.pair1, ...g.pair2])
+					.sort((a, b) => a - b);
+				expect(seen).toEqual(players);
+			}
+		});
+
+		it('every player partners every other player exactly once', () => {
+			const counts = new Map<string, number>();
+			for (const g of games) {
+				for (const [a, b] of [g.pair1, g.pair2]) {
+					counts.set(key(a, b), (counts.get(key(a, b)) ?? 0) + 1);
+				}
+			}
+			expect(counts.size).toBe((n * (n - 1)) / 2);
+			for (const c of counts.values()) expect(c).toBe(1);
+		});
+
+		it('every player faces every other player exactly twice', () => {
+			const counts = new Map<string, number>();
+			for (const g of games) {
+				for (const a of g.pair1) {
+					for (const b of g.pair2) counts.set(key(a, b), (counts.get(key(a, b)) ?? 0) + 1);
+				}
+			}
+			expect(counts.size).toBe((n * (n - 1)) / 2);
+			for (const c of counts.values()) expect(c).toBe(2);
+		});
 	});
 });
 

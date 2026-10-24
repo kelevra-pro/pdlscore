@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { GAME_COUNT } from '#lib/domain/schedule.ts';
+import { gameCount } from '#lib/domain/schedule.ts';
 
 const DB_PATH = resolve(process.env.DATABASE_PATH ?? 'data/app.db');
 
@@ -67,7 +67,7 @@ export const createTournament = db.transaction((players: string[], pointsPerGame
 	let id = newId();
 	while (selectTournament.get(id)) id = newId();
 	insertTournament.run(id, JSON.stringify(players), pointsPerGame);
-	for (let idx = 0; idx < GAME_COUNT; idx++) insertGame.run(id, idx);
+	for (let idx = 0; idx < gameCount(players.length); idx++) insertGame.run(id, idx);
 	return id;
 });
 

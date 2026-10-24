@@ -29,6 +29,9 @@
 
 <a class="back" href={backHref}>← К турниру</a>
 <h1>Игра {data.game.idx + 1} · до {n}</h1>
+{#if names.length > 4}
+	<p class="muted where">Раунд {data.game.round + 1} · корт {data.game.court + 1}</p>
+{/if}
 
 <div class="summary card" aria-live="polite">
 	<span>{pairName(data.game.pair1)}</span>
@@ -85,6 +88,10 @@
 		display: inline-block;
 		margin-bottom: 8px;
 		text-decoration: none;
+	}
+
+	.where {
+		margin-top: -8px;
 	}
 
 	.summary {

@@ -7,6 +7,10 @@
 	const playedCount = $derived(data.games.filter((g) => g.score1 !== null).length);
 	const finished = $derived(playedCount === data.games.length);
 	const pairName = (pair: readonly number[]) => pair.map((p) => names[p]).join(' + ');
+	const multiCourt = $derived(names.length > 4);
+	const rounds = $derived(
+		Array.from({ length: names.length - 1 }, (_, r) => data.games.filter((g) => g.round === r))
+	);
 </script>
 
 <svelte:head>
@@ -19,28 +23,42 @@
 	отправить игрокам
 </p>
 
-<section class="games">
-	{#each data.games as game (game.idx)}
-		{@const played = game.score1 !== null && game.score2 !== null}
-		<article class="card game">
-			<div class="title muted">Игра {game.idx + 1}</div>
-			<div class="row" class:win={played && game.score1! > game.score2!}>
-				<span class="pair">{pairName(game.pair1)}</span>
-				<span class="score">{played ? game.score1 : '–'}</span>
-			</div>
-			<div class="row" class:win={played && game.score2! > game.score1!}>
-				<span class="pair">{pairName(game.pair2)}</span>
-				<span class="score">{played ? game.score2 : '–'}</span>
-			</div>
-			<a
-				class="btn {played ? 'secondary' : ''} block"
-				href="/t/{data.tournament.id}/game/{game.idx}"
-			>
-				{played ? 'Изменить' : 'Ввести счёт'}
-			</a>
-		</article>
+{#snippet gameCard(game: (typeof data.games)[number])}
+	{@const played = game.score1 !== null && game.score2 !== null}
+	<article class="card game">
+		<div class="title muted">
+			Игра {game.idx + 1}{multiCourt ? ` · корт ${game.court + 1}` : ''}
+		</div>
+		<div class="row" class:win={played && game.score1! > game.score2!}>
+			<span class="pair">{pairName(game.pair1)}</span>
+			<span class="score">{played ? game.score1 : '–'}</span>
+		</div>
+		<div class="row" class:win={played && game.score2! > game.score1!}>
+			<span class="pair">{pairName(game.pair2)}</span>
+			<span class="score">{played ? game.score2 : '–'}</span>
+		</div>
+		<a class="btn {played ? 'secondary' : ''} block" href="/t/{data.tournament.id}/game/{game.idx}">
+			{played ? 'Изменить' : 'Ввести счёт'}
+		</a>
+	</article>
+{/snippet}
+
+{#if multiCourt}
+	{#each rounds as round, r (r)}
+		<h2 class="round">Раунд {r + 1}</h2>
+		<section class="games">
+			{#each round as game (game.idx)}
+				{@render gameCard(game)}
+			{/each}
+		</section>
 	{/each}
-</section>
+{:else}
+	<section class="games">
+		{#each data.games as game (game.idx)}
+			{@render gameCard(game)}
+		{/each}
+	</section>
+{/if}
 
 <section class="card">
 	<h2>{finished ? 'Итоговая таблица' : 'Таблица'}</h2>
@@ -78,6 +96,17 @@
 		display: grid;
 		gap: 12px;
 		margin-bottom: 16px;
+	}
+
+	@media (min-width: 640px) {
+		.round + .games {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	.round {
+		font-size: 1rem;
+		margin: 20px 0 8px;
 	}
 
 	.title {
